@@ -1,0 +1,91 @@
+
+журнал импорта
+из даты и времени импорта даты и времени
+из обновления импорта телеграммы, InlineKeyboardButton, InlineKeyboardMarkup
+из telegram.ext импортировать ApplicationBuilder, CommandHandler, MessageHandler, фильтры, ContextTypes, CallbackQueryHandler
+
+# Инициализация логирования
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# Пример данных о продажах
+данные_продаж = []
+
+async def start (обновление: обновление, контекст: ContextTypes.DEFAULT_TYPE) -&gt; Нет:
+    клавиатура = [
+        [InlineKeyboardButton("Внести данные о продаже", callback_data='add_sale')],
+        [InlineKeyboardButton("Получить отчет о продажах за период", callback_data='get_report')]
+    ]
+    ответ_маркуп = InlineKeyboardMarkup(клавиатура)
+    await update.message.reply_text("Выберите действие:", Answer_markup=reply_markup)
+
+асинхронное определение button_handler (обновление: обновление, контекст: ContextTypes.DEFAULT_TYPE) -&gt; Нет:
+    запрос = update.callback_query
+    ожидайте запроса.ответа()
+
+    если query.data == 'add_sale':
+        await query.edit_message_text("Введите данные о продаже в формате: название, объем, дата (ДД-ММ-ГГГГ))")
+        context.user_data['mode'] = 'add_sale' # Устанавливаем режим на добавление продажи
+    elif query.data == 'get_report':
+        await query.edit_message_text("Введите диапазон для отчета в формате: ДД-ММ-ГГГГ, ДД-ММ-ГГГГ")
+        context.user_data['mode'] = 'get_report' # Устанавливаем режим при получении отчета
+
+асинхронное определение handle_message (обновление: обновление, контекст: ContextTypes.DEFAULT_TYPE) -&gt; Нет:
+    текст = update.message.text
+
+    # Проверка режима
+    если «режим» не в context.user_data:
+        await update.message.reply_text("Сначала выбрала действие через /start.")
+        возвращаться
+
+    # Режим добавления данных о продаже
+    if context.user_data['mode'] == 'add_sale':
+        пытаться:
+            # Разбираем текст на компоненты
+            имя, сумма, дата = карта(str.strip, text.split(','))
+            sales_data.append({'name': имя, 'сумма': float(количество), 'дата': дата})
+            await update.message.reply_text("Запись о продаже успешно добавлена.")
+        кроме исключения как e:
+            await update.message.reply_text("Ошибка при добавлении продажи. Пожалуйста, воспользуйтесь форматом: 'название, длина, дата (ДД-ММ-ГГГГ))'.")
+            logging.error(f"Ошибка при добавлении записи: {e}")
+
+    # Режим получения отчета
+    elif context.user_data['mode'] == 'get_report':
+        пытаться:
+            date_parts = список(карта(str.strip, text.split(',')))
+            # Проверка количества введённых дат
+            если len(date_parts) != 2:
+                await update.message.reply_text("Пожалуйста, введите два периода дат через запятую (например, '01-01-2023, 31-01-2023').")
+                возвращаться
+
+            start_date_str, end_date_str = части_даты
+            # Преобразуем строки в объекты date
+            start_date = datetime.strptime(start_date_str, '%d-%m-%Y')
+            end_date = datetime.strptime(end_date_str, '%d-%m-%Y')
+
+            # Фильтруем записи о продажах в соответствии с введенным периодом.
+            filtered_sales = [
+                продажа на продажу в sales_data
+                if start_date &lt;= datetime.strptime(sale['date'], '%d-%m-%Y') &lt;= end_date
+            ]
+
+            если filtered_sales:
+                sales_report = "\n".join([f"{sale['name']} - {sale['amount']} - {sale['date']}" для продажи в filtered_sales])
+                await update.message.reply_text(f"Данные о продажах за период:\n{sales_report}")
+            еще:
+                await update.message.reply_text("Сетевые записи о продажах за данный период.")
+        кроме исключения как e:
+            await update.message.reply_text("Ошибка при обработке периода. Убедитесь, что дата указана правильно.")
+            logging.error(f"Ошибка при получении торговых данных: {e}")
+
+определенно основной():
+    token = '8048335958:AAHQVDUFJRf45xCEIfpVauhDnWuN_Tmyk3M' # Замените ваш реальный токен
+    приложение = ApplicationBuilder().токен(токен).build()
+
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button_handler)))
+    application.add_handler(MessageHandler(filters.TEXT &amp; ~filters.COMMAND, handle_message))
+
+    application.run_polling()
+
+if __name__ == '__main__':
+    основной()
